@@ -1,0 +1,68 @@
+services:
+
+  template_service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development-image
+    container_name: template_service
+    env_file:
+      - .env
+    restart: always
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      alembic:
+        condition: service_completed_successfully
+
+    profiles:
+      - dev
+      - app
+
+  alembic:
+    container_name: alembic
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: alembic-image
+    env_file:
+      - .env
+    depends_on:
+      postgresql:
+        condition: service_healthy
+
+    profiles:
+      - dev
+
+  postgresql:
+    image: "postgres:15-alpine3.20"
+    container_name: postgresql
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - postgres_volume_local:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: ${POSTGRES__DB}
+      POSTGRES_USER: ${POSTGRES__USER}
+      POSTGRES_PASSWORD: ${POSTGRES__PASSWORD}
+      PG_DATA: ./local/pgdata
+
+    healthcheck:
+      test: [ "CMD-SHELL", "sh -c 'pg_isready -U ${POSTGRES__USER} -d ${POSTGRES__DB}'" ]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+    profiles:
+      - dev
+      - db
+
+
+volumes:
+  postgres_volume_local:
+
+  
+

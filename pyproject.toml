@@ -1,0 +1,158 @@
+[tool.poetry]
+name = "fastapi-template"
+version = "0.3.0"
+description = "Шаблонный проект для разработки веб приложений на fastapi."
+maintainers = [
+    "Evgeniy Mishchenko <akk-06@mail.ru>"
+]
+package-mode = false
+
+
+[tool.poetry.dependencies]
+python = "3.13.5"
+asyncpg = "0.30.0"
+fastapi = { extras = ["all"], version = "0.121.0" }
+uvicorn = { extras = ["standard"], version = "0.38.0" }
+sqlalchemy = "2.0.44"
+alembic = "1.17.1"
+orjson = "3.11.4"
+loguru = "0.7.3"
+pydantic-settings = "2.11.0"
+starlette-exporter = "0.23.0"
+dishka = "1.7.2"
+
+
+[tool.poetry.group.dev.dependencies]
+testcontainers = "4.13.2"
+asgi-lifespan = "2.1.0"
+pytest = "8.4.2"
+mypy = "1.18.2"
+pre-commit = "4.3.0"
+pytest-asyncio = "1.2.0"
+pytest-alembic = "0.12.1"
+pytest-cov = "7.0.0"
+ruff = "0.14.3"
+schemathesis = "4.3.18"
+
+
+[build-system]
+requires = ["poetry-core>=2.2.1"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.mypy]
+python_version = 3.13
+
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+addopts = "-v"
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')"
+]
+testpaths = [
+    "tests",
+]
+
+[tool.ruff]
+# https://beta.ruff.rs/docs/rules/
+lint.select = [
+    "E", # PyCodeStyle errors
+    "W", # PyCodeStyle warnings
+    "I", # isort
+    "N", # pep8-naming
+    "F", # Pyflakes
+    "UP", # pyupgrade
+    "T20", # flake8-print
+    "SIM", # flake8-simplify
+    "B", # flake8-bugbear
+    "ASYNC", # flake8-asynс
+    "G", # flake8-logging-forma
+    "DTZ", # flake8-datetimez раскоментить после рефакторинг
+    "D", # - докстринги - самый душный линтер
+    "RUF", # Ruff-specific rules
+    "ANN201", # - neccecary type hints (undocument foo)
+    "ANN202", # - neccecary type hints (private foo)
+    "ANN204", # - neccecary type hints (special foo)
+    "ANN205", # - neccecary type hints (class foo)
+    "ANN206", # - neccecary type hints (static foo)
+]
+lint.ignore = [
+    "D100",
+    "D101",
+    "D104",
+    "D105",
+    "D106", # D106 Missing docstring in public nested class
+    "D202", # D202cNo blank lines allowed after function docstring
+    "N805",
+    "B008", # B008 Do not perform function call `Depends` in argument defaults
+    "D107", # Missing docstring in `__init__`
+    "RUF001", # String contains ambiguous
+    "RUF002", # Docstring contains ambiguous
+    "RUF003", # Comment contains ambiguous
+    "RUF012", # Mutable class attributes should be annotated with `typing.ClassVar`
+]
+lint.extend-select = [
+    "B006", # mutable-argument-default
+#    "COM812", # missing-trailing-comma
+    "PIE794", # duplicate-class-field-definition
+]
+
+
+# Exclude a variety of commonly ignored directories.
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".git-rewrite",
+    ".hg",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "venv",
+    ".venv",
+    "env",
+    "cli.example",
+    "cli",
+]
+
+# Same as Black.
+line-length = 88
+
+# Allow unused variables when underscore-prefixed.
+lint.dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+# Assume Python 3.13.
+target-version = "py313"
+
+[tool.ruff.lint.isort]
+force-wrap-aliases = true
+force-single-line = true
+combine-as-imports = false
+lines-between-types = 1
+
+[tool.ruff.lint.pydocstyle]
+# Use Google-style docstrings.
+convention = "google"
+
+[tool.ruff.lint.per-file-ignores]
+"migrations/*.py" = ["D", "E402", "E501", "ANN", "SIM103"]
+"tests/*.py" = ["D", "DTZ", "E501", "ANN"]
+"tests/conftest.py" = ["E402"]
+"app/api/v1/controllers/*.py" = ["D103"]
+
+[tool.ruff.format]
+quote-style = "single"
+indent-style = "space"
+skip-magic-trailing-comma = false

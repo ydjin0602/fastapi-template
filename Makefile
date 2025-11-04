@@ -1,0 +1,49 @@
+PORT:=8000
+
+run:
+	uvicorn app.main:app --host 127.0.0.1 --port "$(PORT)" --reload
+
+migrations_init:
+	alembic revision --autogenerate -m "init"
+
+makemigrations:
+	alembic revision --autogenerate -m "$(MSG)"
+
+migrate:
+	alembic upgrade head
+
+migrate_with_data:
+	alembic -x data=true upgrade head
+
+stamp:
+	alembic stamp head
+
+dump_migrations:
+	alembic upgrade head --sql > migration.sql
+
+all:
+	docker compose --profile all up -d
+
+stack_up:
+	docker compose --profile stack up -d --scale template_service=0
+
+stack_down:
+	docker compose --profile stack down
+
+kill_containers:
+	docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q)
+
+kill_volumes:
+	docker volume rm $(docker volume ls -qf dangling=true)
+
+test_long:
+	pytest --maxfail=1 --cov=app -vv --cov-config .coveragerc
+
+test:
+	pytest --maxfail=1 --cov=app -vv --cov-config .coveragerc -m "not long"
+
+clean:
+	find . | grep -E "(__pycache__|\.pyc|\.pyo$)" | xargs rm -rf
+
+lint:
+	pre-commit run --all-files

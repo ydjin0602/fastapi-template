@@ -1,0 +1,70 @@
+# OS
+## macOS
+.DS_Store
+
+## Windows
+
+## Linux
+
+# Python
+__pycache__/
+*.pyc
+
+## Tests
+.cache/
+.coverage
+.pytest_cache/
+
+## Virtual Environments
+.venv/
+.venv-*/
+**/venv-*/
+env/
+**/venv/
+
+## Environment
+.env
+
+# IDE
+
+## PyCharm
+.idea/
+
+# Text Editors
+.ipynb_checkpoints
+
+## Visual Studio Code
+.vscode/
+*.code-workspace
+
+## Vim
+[._]*.s[a-v][a-z]
+[._]*.sw[a-p]
+[._]s[a-v][a-z]
+[._]sw[a-p]
+
+## Log Files
+logs/
+*.log
+*/log_file/
+
+## Pytest
+*.pytest_cache/
+
+# Git
+.git/*
+.gitignore
+README.md
+
+# Docker
+docker-compose.yml
+Dockerfile
+.dockerignore
+
+#  GitLabCI
+.gitlab-ci.yml
+
+# Configs
+.flake8
+.darglint
+.coveragerc
