@@ -24,7 +24,7 @@ RUN mkdir -p /app && chmod 777 /app
 WORKDIR /app
 
 # Устанавливаем Poetry
-RUN curl -sSL https://install.python-poetry.org | python3 -
+RUN pip install poetry
 
 # Копируем файлы проекта
 COPY --chown=user:user pyproject.toml poetry.lock ./

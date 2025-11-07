@@ -20,6 +20,7 @@ class ApplicationProvider(Provider):
             pool_size=config.postgres.pool_size,
             max_overflow=config.postgres.overflow_pool_size,
             pool_pre_ping=True,
+            isolation_level='AUTOCOMMIT',
             # echo=True,
         )
         yield engine

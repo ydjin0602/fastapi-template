@@ -13,7 +13,7 @@ def get_swagger_ui_html(
     title: str = 'VPN-PORT',
     swagger_js_url: str = 'https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.9.0/swagger-ui-bundle.js',
     swagger_css_url: str = 'https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.9.0/swagger-ui.css',
-    swagger_favicon_url: str = 'https://cheers.su/favicon.svg',
+    swagger_favicon_url: str = 'https://fastapi.tiangolo.com/img/favicon.png',
     oauth2_redirect_url: str | None = None,
     init_oauth: dict[str, Any] | None = None,
     swagger_ui_parameters: dict[str, Any] | None = None,
