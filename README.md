@@ -72,11 +72,7 @@
 > флаг `--build` перебилдит текущий проект
 
 ## 2.2. Запуск без докера
-
-Ставим флаг `poetry config virtualenvs.in-project true`, если хотим создавать .venv в
-текущей папки проекта (опционально)
-
-- Устанавливаем зависимости `poetry install`;
+- Устанавливаем зависимости `uv sync`;
 - Ставим `pre-commit install` для линта кода;
 - Устанавливаем переменные окружения
 - Запускаем pg `docker compose --profile db up -d --build`;
@@ -156,7 +152,7 @@ pre-commit run --all-files
 
 Если алембик и SQLAlchemy использовать не планируется:
 
-- Выпиливаем зависимости `poetry remove alembic sqlalchemy`
+- Удаляем зависимости `uv remove alembic sqlalchemy`
 - Удаляем файл `alembic.ini`
 - Удаляем папку `migrations`
 - Удаляем папку `app/api/db`
