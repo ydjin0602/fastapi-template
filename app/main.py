@@ -17,12 +17,6 @@ from app.api.utils.middlewares.router_logging_middleware import RouterLoggingMid
 from app.api.utils.swagger.tags_metadata import get_tags_metadata
 from app.config import config
 
-# При запуске приложения нужно будет поднять 2 процесса рядом.
-# Брокер тизика
-# TODO: taskiq worker app.pipelines.broker:broker app.pipelines
-# Шедулер тазика
-# TODO: taskiq scheduler app.pipelines.broker:scheduler app.pipelines --skip-first-run
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None]:

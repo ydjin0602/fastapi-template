@@ -4,7 +4,6 @@ from typing import Any
 from dotenv import find_dotenv
 from dotenv import load_dotenv
 from pydantic import BaseModel
-from pydantic import model_validator
 from pydantic_settings import BaseSettings
 from pydantic_settings import SettingsConfigDict
 from sqlalchemy import URL
@@ -56,29 +55,20 @@ class PostgresSettings(BaseModel):
     user: str | None = 'postgres'
     password: str | None = 'example'
     db: str | None = 'template_schema'
-    database_uri: Any | None = None
     pool_size: int = 10  # Размер пула соединений алхимии
     overflow_pool_size: int = 20  # Размер очереди соединений
 
-    @model_validator(mode='before')
-    @classmethod
-    def database_uri_validator(cls, data: dict) -> Any:
+    @property
+    def database_uri(self) -> URL:
         """Собираем PG-URI."""
-
-        sqlalchemy_db_uri = URL.create(
+        return URL.create(
             drivername='postgresql+asyncpg',
-            username=data.get('user'),
-            password=data.get('password'),
-            host=data.get('host'),
-            port=data.get('port', 5432),
-            database=data.get('db', ''),
+            username=self.user,
+            password=self.password,
+            host=self.host,
+            port=self.port,
+            database=self.db,
         )
-
-        data.update(
-            {'database_uri': sqlalchemy_db_uri},
-        )
-
-        return data
 
 
 class Settings(BaseSettings):

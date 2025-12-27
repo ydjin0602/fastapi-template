@@ -3,14 +3,11 @@ FROM python:3.13.5-slim as base-image
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    PIP_NO_CACHE_DIR=off \
-    POETRY_HOME="/opt/poetry" \
-    POETRY_VIRTUALENVS_IN_PROJECT=true \
-    POETRY_NO_INTERACTION=1 \
-    POETRY_VERSION=2.2.1 \
+    UV_HOME="/root/.local/bin" \
+    UV_PROJECT_ENVIRONMENT="/app/.venv" \
     PROJECT_PATH="/app"
 
-ENV PATH="$POETRY_HOME/bin:$PATH"
+ENV PATH="$UV_HOME:$PATH"
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends gcc build-essential curl && \
@@ -24,13 +21,13 @@ RUN mkdir -p /app && chmod 777 /app
 WORKDIR /app
 
 # Устанавливаем Poetry
-RUN pip install poetry
+RUN pip install uv
 
 # Копируем файлы проекта
-COPY --chown=user:user pyproject.toml poetry.lock ./
+COPY --chown=user:user pyproject.toml uv.lock ./
 
 # Устанавливаем зависимости (без установки самого проекта)
-RUN poetry install --no-root
+RUN uv sync --frozen --no-install-project
 
 ##############################################################
 # Образ для разработки
@@ -48,12 +45,12 @@ RUN curl -o /usr/bin/wait-for-it.sh https://raw.githubusercontent.com/vishnubob/
 
 USER user
 
-CMD ["poetry", "run", "uvicorn", "app.main:app", "--reload", "--host", "0.0.0.0", "--port", "3000"]
+CMD ["uv", "run", "uvicorn", "app.main:app", "--reload", "--host", "0.0.0.0", "--port", "3000"]
 
 ##############################################################
 # Образ для миграций Alembic
 FROM development-image AS alembic-image
-CMD ["sh", "-c", "poetry run alembic -c ./alembic.ini -x data=true upgrade head && exit 0"]
+CMD ["sh", "-c", "uv run alembic -c ./alembic.ini -x data=true upgrade head && exit 0"]
 
 ##############################################################
 # Образ для тестирования
@@ -66,7 +63,7 @@ COPY --chown=user:user ./migrations /app/migrations
 COPY --chown=user:user ./tests /app/tests
 
 USER user
-CMD ["poetry", "run", "pytest", "--cov=app", "-vv", "--cov-config", ".coveragerc", "--junitxml=report.xml"]
+CMD ["uv", "run", "pytest", "--cov=app", "-vv", "--cov-config", ".coveragerc", "--junitxml=report.xml"]
 
 ##############################################################
 # Образ для production
@@ -76,4 +73,4 @@ ENV COMMON__ENVIRONMENT=PROD
 COPY --chown=user:user ./app /app/app
 
 USER user
-CMD ["poetry", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "3000"]
+CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "3000"]
