@@ -10,7 +10,7 @@ from starlette.responses import HTMLResponse
 def get_swagger_ui_html(
     *,
     openapi_url: str = '/openapi.json',
-    title: str = 'VPN-PORT',
+    title: str = 'Template Service',
     swagger_js_url: str = 'https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.9.0/swagger-ui-bundle.js',
     swagger_css_url: str = 'https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.9.0/swagger-ui.css',
     swagger_favicon_url: str = 'https://fastapi.tiangolo.com/img/favicon.png',
