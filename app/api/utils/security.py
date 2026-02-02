@@ -1,6 +1,7 @@
 import binascii
 
 from base64 import b64decode
+from hmac import compare_digest
 from typing import Annotated
 
 from fastapi import Depends
@@ -61,10 +62,9 @@ async def authenticate_swagger(
     credentials: Annotated[HTTPBasicKeyCredentials, Depends(basic_security)],
 ) -> None:
     """Basic авторизация по логину и паролю из конфига для сваггера."""
-    if (
-        credentials.login != config.swagger.doc_login
-        or credentials.password != config.swagger.doc_password
-    ):
+    if not compare_digest(
+        credentials.login, config.swagger.doc_login
+    ) or not compare_digest(credentials.password, config.swagger.doc_password):
         raise AuthenticationError(
             message='Введен неверный логин или пароль.',
         )
