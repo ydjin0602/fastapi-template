@@ -6,10 +6,12 @@ from dishka import FromDishka as Depends
 from dishka.integrations.fastapi import DishkaRoute
 from fastapi import APIRouter
 from starlette.status import HTTP_204_NO_CONTENT
+from starlette.status import HTTP_400_BAD_REQUEST
 from starlette.status import HTTP_404_NOT_FOUND
 from starlette.status import HTTP_409_CONFLICT
 
 from app.api.utils.swagger.default_response import get_responses
+from app.api.v1.schemas.base_schema import IdPath
 from app.api.v1.schemas.user_schema import CreateUserSchema
 from app.api.v1.schemas.user_schema import DeleteUserSchema
 from app.api.v1.schemas.user_schema import GetUserByIdSchema
@@ -47,7 +49,7 @@ async def get_all_users(
     responses=get_responses(include_statuses=[HTTP_404_NOT_FOUND]),
 )
 async def get_user_by_id(
-    user_id: int,
+    user_id: IdPath,
     usecase: Depends[GetUserByIdUsecase],
 ) -> Any:
     return await usecase(
@@ -64,7 +66,9 @@ async def get_user_by_id(
     description='Создать нового пользователя в системе. Необходимо указать уникальное'
     ' имя пользователя, email адрес и пароль. Пароль будет автоматически'
     ' хеширован перед сохранением в базу данных',
-    responses=get_responses(include_statuses=[HTTP_409_CONFLICT]),
+    responses=get_responses(
+        include_statuses=[HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT]
+    ),
 )
 async def create_user(
     body: CreateUserSchema,
@@ -80,9 +84,10 @@ async def create_user(
     description='Удалить пользователя из системы по его уникальному идентификатору.'
     ' Действие необратимо - все данные пользователя будут безвозвратно'
     ' удалены',
+    responses=get_responses(include_statuses=[HTTP_404_NOT_FOUND]),
 )
 async def delete_user(
-    user_id: int,
+    user_id: IdPath,
     usecase: Depends[DeleteUserUsecase],
 ) -> None:
     await usecase(

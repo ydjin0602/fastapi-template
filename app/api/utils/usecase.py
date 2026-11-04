@@ -21,7 +21,7 @@ class _TransactionalMixin(Protocol):
         # Оборачиваем __call__ метод автоматически
         original_call = cls.__call__
 
-        async def wrapped_call(self: 'Usecase', **kwargs) -> TOutputDTO:
+        async def wrapped_call(self: Usecase, **kwargs) -> TOutputDTO:
             if hasattr(self, 'session') and isinstance(self.session, AsyncSession):
                 if self.session.in_transaction():
                     async with self.session.begin_nested():

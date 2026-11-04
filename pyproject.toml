@@ -1,34 +1,41 @@
 [project]
 name = "fastapi-template"
-version = "0.3.0"
+version = "0.4.0"
 description = "Шаблонный проект для разработки веб приложений на fastapi."
-requires-python = "==3.13.5"
+requires-python = "==3.14.8"
 maintainers = [{ name = "Evgeniy Mishchenko", email = "akk-06@mail.ru" }]
 dependencies = [
-    "asyncpg==0.30.0",
-    "fastapi[all]==0.121.0",
-    "uvicorn[standard]==0.38.0",
-    "sqlalchemy==2.0.44",
-    "alembic==1.17.1",
-    "orjson==3.11.4",
+    "asyncpg==0.32.0",
+    "fastapi[all]==0.162.0",
+    "uvicorn[standard]==0.54.0",
+    "sqlalchemy==2.1.8",
+    "alembic==1.20.1",
+    "orjson==3.13.0",
     "loguru==0.7.3",
-    "pydantic-settings==2.11.0",
-    "starlette-exporter==0.23.0",
-    "dishka==1.7.2",
+    "pydantic-settings==2.16.2",
+    "starlette-exporter==0.24.0",
+    "dishka==1.10.1",
+    # FIXME: Если сервису не нужны Redis / Kafka — удали зависимости ниже
+    #  вместе с провайдерами в app/api/di и секциями в app/config.py
+    "redis==8.1.0",
+    "faststream[confluent]==0.7.8",
+    "dishka-faststream==0.7.0",
+    "greenlet==3.5.6",
 ]
 
 [dependency-groups]
 dev = [
-    "testcontainers==4.13.2",
+    "testcontainers==4.15.0",
     "asgi-lifespan==2.1.0",
-    "pytest==8.4.2",
-    "mypy==1.18.2",
-    "pre-commit==4.3.0",
-    "pytest-asyncio==1.2.0",
-    "pytest-alembic==0.12.1",
-    "pytest-cov==7.0.0",
-    "ruff==0.14.3",
-    "schemathesis==4.3.18",
+    "pytest==9.2.0",
+    "mypy==2.4.1",
+    "pre-commit==4.7.0",
+    "pytest-asyncio==1.4.1.post1",
+    "pytest-alembic==0.13.2",
+    "pytest-cov==7.1.0",
+    "ruff==0.17.3",
+    "schemathesis==4.33.1",
+    "psycopg[binary]==3.3.8",
 ]
 
 [tool.uv]
@@ -39,11 +46,15 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.mypy]
-python_version = 3.13
+python_version = 3.14
 
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+# Единый event loop на сессию — иначе asyncpg-коннекты из session-фикстур
+# падают с "attached to a different loop" в function-scoped тестах
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
 addopts = "-v"
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')"
@@ -132,8 +143,8 @@ exclude = [
 # Same as Black.
 line-length = 88
 
-# Assume Python 3.13.
-target-version = "py313"
+# Assume Python 3.14.
+target-version = "py314"
 
 [tool.ruff.lint.isort]
 force-wrap-aliases = true

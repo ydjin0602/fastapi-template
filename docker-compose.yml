@@ -14,6 +14,8 @@ services:
     depends_on:
       postgresql:
         condition: service_healthy
+      redis:
+        condition: service_healthy
       alembic:
         condition: service_completed_successfully
 
@@ -60,9 +62,27 @@ services:
       - dev
       - db
 
+  redis:
+    # FIXME: Redis не нужен — удали этот сервис, REDIS__* из env.example
+    #  и redis-провайдеры из app/api/di
+    image: "redis:8-alpine"
+    container_name: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_volume_local:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+    profiles:
+      - dev
+      - db
+
 
 volumes:
   postgres_volume_local:
-
-  
+  redis_volume_local:
 

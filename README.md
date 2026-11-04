@@ -64,9 +64,14 @@
 Запуск возможен в 3x вариациях:
 
 - `docker compose up --profile app up` - запуск только текущего сервиса;
-- `docker compose --profile db up` - запуск pg
-- `docker compose --profile dev up` - запуск сервиса + postgresql + выполнятся
-  мииграции;
+- `docker compose --profile db up` - запуск pg + redis
+- `docker compose --profile dev up` - запуск сервиса + postgresql + redis +
+  выполнятся миграции;
+
+> Dockerfile собирается в несколько стадий (multi-stage): `development-image` (dev-
+> зависимости и hot-reload), `alembic-image` (накат миграций), `test-image` (pytest
+> + coverage) и `production-image` (лёгкий образ без компиляторов и dev-зависимостей).
+> Стадия указывается через `--target <stage>` в docker build / docker-compose.
 
 > флаг `-d` запустит контейнер в фоновом режиме
 > флаг `--build` перебилдит текущий проект
@@ -76,8 +81,8 @@
 - Ставим `pre-commit install` для линта кода;
 - Устанавливаем переменные окружения
 - Запускаем pg `docker compose --profile db up -d --build`;
-- Запускам миграции `alembic` командой `alembic -x data=true upgrade head`;
-- Запускаем приложение `uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload`;
+- Запускам миграции `make migrate_with_data`;
+- Запускаем приложение `make run`;
 
 # 3. Использование
 
@@ -86,18 +91,16 @@
 > Здесь можно указывать все, что связано с тестами. Допустим указать параметры для
 > пропуска "долгих" тестов, какие тесты отключены и почему и тд
 
+Все тесты (в т.ч. "долгие" тесты миграций с testcontainers):
+
 ```bash
-pytest --maxfail=1 --cov=app -vv --cov-config .coveragerc
+make test_slow
 ```
 
-```bash
-docker-compose exec template_service pytest --maxfail=1 --cov=app  -vv --cov-config .coveragerc
-```
-
-Пропуск "долгих" тестов:
+Пропуск "долгих" тестов (маркер `slow`):
 
 ```bash
-pytest --maxfail=1 --cov=app -vv --cov-config .coveragerc -m "not long"
+make test
 ```
 
 ## 3.2 Линтеры
@@ -107,19 +110,21 @@ pytest --maxfail=1 --cov=app -vv --cov-config .coveragerc -m "not long"
 Запуск линтеров по всему проекту:
 
 ```bash
-pre-commit run --all-files
+make lint
 ```
 
 ## 3.3 Миграции
 
-> Блок с алембиком (если он нужен)
+> Блок с алембиком (если он нужен). Все команды доступны через Makefile
+> (`make migrations_init`, `make makemigrations MSG=...`, `make migrate`,
+> `make migrate_with_data`, `make downgrade`).
 
-- `alembic revision --autogenerate -m "message"` - генерация новой миграции
-- `alembic upgrade head` - накат миграций
-- `alembic -x data=true upgrade head ` - накат миграций вместе с данными. Выполняется
+- `uv run alembic revision --autogenerate -m "message"` - генерация новой миграции
+- `uv run alembic upgrade head` - накат миграций
+- `uv run alembic -x data=true upgrade head` - накат миграций вместе с данными. Выполняется
   функция data_upgrades() в файле миграции
-- `alembic upgrade head --sql > migration.sql` - генерация SQL файла с миграциями.
-- `alembic downgrade -1` - откат миграции на 1 версию назад
+- `uv run alembic upgrade head --sql > migration.sql` - генерация SQL файла с миграциями.
+- `uv run alembic downgrade -1` - откат миграции на 1 версию назад
 
 # 4. Дополнительная информация
 
@@ -133,31 +138,48 @@ pre-commit run --all-files
 ### 1. "Чистка" текущего проекта:
 
 - Удалить все миграции из папки `migrations/versions`;
-- Удалить все модели из папки `app/v1/models`;
-- Удалить все контроллеры из папки `app/v1/controllers`;
-- Удалить лишние импорты и роуты из `app/v1/__init__py`;
-- Удалить файлы `role_schema.py` и `user_schema.py` из папки `app/v1/controllers`;
-- Удалить файлы `role_crud.py` и `user_crud.py` из папки `app/v1/crud`;
-- Удалить все тесты в папке `app/tests/api/v1`
+- Удалить все модели из папки `app/api/v1/models`;
+- Удалить все контроллеры из папки `app/api/v1/controllers`;
+- Удалить лишние импорты и роуты из `app/api/v1/__init__.py`;
+- Удалить файлы `role_schema.py` и `user_schema.py` из папки `app/api/v1/schemas`;
+- Удалить файлы `role_crud.py` и `user_crud.py` из папки `app/api/v1/crud`;
+- Удалить все тесты в папке `tests/api/v1`
 
 ### 2. Настройка проекта:
+
+#### 2.0 Redis и Kafka (FastStream)
+
+Оба компонента опциональны и по умолчанию Kafka выключена (`KAFKA__ENABLED=false`).
+Везде, где их можно выкинуть, оставлены теги `FIXME` с точной инструкцией:
+
+- **Redis**: секция `RedisSettings` в `app/config.py`, провайдеры
+  `redis_pool_scope` / `redis_scope` в `app/api/di`, сервис `redis` в
+  `docker-compose.yml`, зависимость `redis` в `pyproject.toml`.
+- **Kafka**: секция `KafkaSettings` в `app/config.py`, провайдер `kafka_broker_scope`
+  в `app/api/di/application.py`, блок в `_warmup_dependencies` (`app/main.py`),
+  папка `app/api/v1/faststream_consumers`, зависимости `faststream` /
+  `dishka-faststream` в `pyproject.toml`.
+
+Консюмеры описываются в `app/api/v1/faststream_consumers` (см. пример в
+  `example_callback.py`) и подключаются в `faststream_consumers/router.py`.
 
 #### 2.1 Настройка миграций и моделей:
 
 Если планируется использовать Alembic и SQLAlchemy:
 
 - в файле `migrations/env.py` прописываем `schema = "Используемая схема"`
-- описать модели и импортировать их в файл `app/api/db/enabled_migrations_models.py` для
+- описать модели и импортировать их в файл `migrations/enabled_migration_models.py` для
   включения этих моделей в миграции
 
 Если алембик и SQLAlchemy использовать не планируется:
 
-- Удаляем зависимости `uv remove alembic sqlalchemy`
+- Удаляем зависимости `uv remove alembic sqlalchemy asyncpg greenlet`
 - Удаляем файл `alembic.ini`
 - Удаляем папку `migrations`
-- Удаляем папку `app/api/db`
-- Удаляем папки `app/api/v1/crud` и `app/api/v1/models`
-- Удаляем из `app/tests/conftest.py` все фикстуры, использующие БД
+- Удаляем папку `app/api/v1/crud` и `app/api/v1/models`
+- Удаляем `pg_engine_scope` из `app/api/di/application.py` и `pg_session_scope` из
+  `app/api/di/request.py`
+- Удаляем из `tests/conftest.py` все фикстуры, использующие БД
 
 ### 2.2 Настройка переменных окружения
 
@@ -169,18 +191,19 @@ pre-commit run --all-files
 
 По умолчанию подключено:
 
-- Тесты миграций (файл `app/tests/api/utils/test_migrations`).
+- Тесты миграций (файл `tests/api/utils/test_migrations.py`).
   test_up_down_consistency() является довольно медленным тестом при большом количестве
-  миграций;
+  миграций (маркирован `slow`);
 - Тестовый клиент fastapi;
 - Тест хелсчека
-- Все тесты по умолчанию интеграционные, т.е. используется тестовая БД.
+- Все тесты по умолчанию интеграционные, т.е. используется тестовая БД
+  (поднимается через testcontainers — нужен запущенный Docker).
 
 ## 4.2 Важные дополнения
 
 ### BaseDBModel
 
-Все модели стоит наследовать от `app/api/db/base_class.py:BaseDBModel`, т.к.
+Все модели стоит наследовать от `app/api/utils/sqlalchemy/base_db_model.py:BaseDBModel`, т.к.
 базовый класс легче расширять
 
 ### BaseENUM

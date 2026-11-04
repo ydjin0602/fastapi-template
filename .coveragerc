@@ -1,2 +1,2 @@
 [run]
-omit=app/tests/*
+omit=tests/*

@@ -1,11 +1,8 @@
-from dishka.integrations.fastapi import DishkaRoute
 from fastapi import APIRouter
 from starlette.responses import Response
 from starlette.status import HTTP_200_OK
 
-ROUTER = APIRouter(
-    route_class=DishkaRoute,
-)
+ROUTER = APIRouter()
 
 
 @ROUTER.get(

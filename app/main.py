@@ -4,8 +4,11 @@ from contextlib import asynccontextmanager
 import uvicorn
 
 from dishka.integrations import fastapi as fastapi_integration
+from dishka_faststream import setup_dishka as faststream_integration
 from fastapi import FastAPI
-from fastapi.responses import ORJSONResponse
+from fastapi.middleware.cors import CORSMiddleware
+from faststream import FastStream
+from faststream.confluent import KafkaBroker
 from loguru import logger
 
 from app.api.di import DI_CONTAINER
@@ -15,6 +18,7 @@ from app.api.utils.exception_handlers import setup_exception_handlers
 from app.api.utils.loggers import init_logger
 from app.api.utils.middlewares.router_logging_middleware import RouterLoggingMiddleware
 from app.api.utils.swagger.tags_metadata import get_tags_metadata
+from app.api.v1.faststream_consumers.router import faststream_router
 from app.config import config
 
 
@@ -28,8 +32,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     if config.common.struct_log:
         await init_logger()
 
-    await _warmup_dependencies()
-
     yield
 
     await app.state.dishka_container.close()
@@ -41,7 +43,20 @@ async def _warmup_dependencies() -> None:
     #  Поэтому мы принудительно инициализируем критичные зависимости при старте
     #  Например, нам важно чтобы тг бот при старте приложения привязывался за вебхук.
     #  await DI_CONTAINER.get(MyTGBot)
-    pass
+
+    # FIXME: Kafka не нужен — удали блок ниже вместе с kafka_broker_scope
+    #  из app/api/di/application.py и папкой app/api/v1/faststream_consumers
+    if not config.kafka.enabled:
+        return None
+    kafka_broker = await DI_CONTAINER.get(KafkaBroker)
+    faststream_app = FastStream(kafka_broker)
+    faststream_integration(
+        container=DI_CONTAINER,
+        app=faststream_app,
+        auto_inject=True,
+    )
+    faststream_router(broker=kafka_broker)
+    await faststream_app.start()
 
 
 def get_fastapi_app(logging_middleware: bool = True) -> FastAPI:
@@ -51,7 +66,6 @@ def get_fastapi_app(logging_middleware: bool = True) -> FastAPI:
         FastAPI
     """
     fast_api_app = FastAPI(
-        default_response_class=ORJSONResponse,
         title=config.common.project_name,
         description='Описание супер крутого микросервиса',
         openapi_tags=get_tags_metadata(),
@@ -65,19 +79,16 @@ def get_fastapi_app(logging_middleware: bool = True) -> FastAPI:
     if logging_middleware:
         fast_api_app.add_middleware(RouterLoggingMiddleware, current_logger=logger)
 
-    # TODO: Раскомментить при необходимости
-    # Set all CORS enabled origins
-    # if config.common.backend_cors_origins:
-    #     fast_api_app.add_middleware(
-    #         CORSMiddleware,
-    #         allow_origins=[
-    #             str(origin) for origin in config.common.backend_cors_origins
-    #         ],
-    #         allow_credentials=True,
-    #         allow_methods=['*'],
-    #         allow_headers=['*'],
-    #     )
+    if config.common.backend_cors_origins:
+        fast_api_app.add_middleware(
+            CORSMiddleware,
+            allow_origins=config.common.backend_cors_origins,
+            allow_credentials=False,
+            allow_methods=['*'],
+            allow_headers=['*'],
+        )
 
+    # TODO: Раскомментировать при необходимости (для браузерных клиентов)
     # if config.common.backend_cors_origins:
     #     fast_api_app.add_middleware(
     #         CSRFMiddleware,

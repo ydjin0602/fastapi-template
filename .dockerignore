@@ -67,4 +67,3 @@ Dockerfile
 # Configs
 .flake8
 .darglint
-.coveragerc

@@ -10,7 +10,7 @@ from uuid import uuid4
 import loguru
 
 from fastapi import FastAPI
-from fastapi.responses import ORJSONResponse
+from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
@@ -45,9 +45,9 @@ class RouterLoggingMiddleware(BaseHTTPMiddleware):
     https://medium.com/@dhavalsavalia/fastapi-logging-middleware-logging-requests-and-responses-with-ease-and-style-201b9aa4001a
     """
 
-    _logger: 'loguru.Logger'
+    _logger: loguru.Logger
 
-    def __init__(self, app: FastAPI, *, current_logger: 'loguru.Logger') -> None:
+    def __init__(self, app: FastAPI, *, current_logger: loguru.Logger) -> None:
         self._logger = current_logger
         super().__init__(app)
 
@@ -107,7 +107,7 @@ class RouterLoggingMiddleware(BaseHTTPMiddleware):
 
                 try:
                     resp_body = json.loads(resp_body[0].decode())
-                except (JSONDecodeError, TypeError):
+                except JSONDecodeError, TypeError:
                     # Ругается на тип, ожидается словарь, но это не корректно,
                     # т.к. боди может быть любым
                     resp_body = str(resp_body)  # type: ignore
@@ -129,7 +129,7 @@ class RouterLoggingMiddleware(BaseHTTPMiddleware):
         except Exception as e:
             exception = e
 
-            response = ORJSONResponse(
+            response = JSONResponse(
                 content={
                     'message': str(e),
                 },
