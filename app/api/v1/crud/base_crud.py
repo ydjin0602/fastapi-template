@@ -5,8 +5,6 @@ from typing import get_args
 from asyncpg import ForeignKeyViolationError
 from asyncpg import UniqueViolationError
 from pydantic import BaseModel
-from sqlalchemy import Row
-from sqlalchemy import RowMapping
 from sqlalchemy import delete
 from sqlalchemy import insert
 from sqlalchemy import select
@@ -31,7 +29,7 @@ class BaseCRUD[ModelT: ModelType]:
         cls,
         *args,
         **kwargs,
-    ) -> 'BaseCRUD':
+    ) -> BaseCRUD:
         """Создаем и инициализируем инстанс, прокидывая модель."""
         instance = super().__new__(cls)
 
@@ -44,7 +42,7 @@ class BaseCRUD[ModelT: ModelType]:
     ) -> None:
         self.db = db
 
-    async def get(self, _id: Any) -> ModelType:
+    async def get(self, _id: Any) -> ModelT:
         """Получаем элемент по айди.
 
         Args:
@@ -67,7 +65,7 @@ class BaseCRUD[ModelT: ModelType]:
 
     async def get_multi(
         self, *, offset: int | None = None, limit: int | None = None
-    ) -> Sequence[Row | RowMapping | Any]:
+    ) -> Sequence[ModelT]:
         """Получаем множество элементов c пагинацией.
 
         Args:
@@ -93,7 +91,7 @@ class BaseCRUD[ModelT: ModelType]:
         obj_in: CreateSchemaType,
         exclude: Sequence[str] | None = None,
         by_alias: bool = False,
-    ) -> ModelType:
+    ) -> ModelT:
         """Создаем запись в БД.
 
         Args:
@@ -108,18 +106,17 @@ class BaseCRUD[ModelT: ModelType]:
             UniqueError, NotFoundError, DatabaseError
         """
         try:
-            db_object = await self.db.execute(
-                insert(self.model).values(
-                    **(
-                        obj_in.model_dump(
-                            exclude_none=True, exclude=exclude, by_alias=by_alias
-                        )
+            stmt = await self.db.execute(
+                insert(self.model)
+                .values(
+                    **obj_in.model_dump(
+                        exclude_none=True, exclude=exclude, by_alias=by_alias
                     )
                 )
+                .returning(self.model)
             )
             await self.db.flush()
-            refresh_object = await self.get(_id=db_object.inserted_primary_key[0])
-            return refresh_object
+            return stmt.scalars().first()
 
         except IntegrityError as e:
             match e.orig.sqlstate:
@@ -138,11 +135,11 @@ class BaseCRUD[ModelT: ModelType]:
     async def update(
         self,
         *,
-        _id: int,
+        _id: Any,
         obj_in: UpdateSchemaType,
         except_fields: list[str] | None = None,
         only_fields: list[str] | None = None,
-    ) -> ModelType | None:
+    ) -> ModelT | None:
         """Обновляем запись по айди.
 
         Args:
@@ -186,7 +183,7 @@ class BaseCRUD[ModelT: ModelType]:
                         message=str(e),
                     ) from e
 
-    async def delete(self, *, _id: int) -> None:
+    async def delete(self, *, _id: Any) -> None:
         """Удаляем объект по айди.
 
         Args:

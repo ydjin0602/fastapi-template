@@ -5,5 +5,6 @@ class EnvEnum(BaseENUM):
     LOCAL = 'LOCAL'
     DEV = 'DEV'
     TEST = 'TEST'
+    STAGE = 'STAGE'
     PROD = 'PROD'
     PYTEST = 'PYTEST'

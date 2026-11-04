@@ -47,7 +47,7 @@ class HTTPBasicAuth(HTTPBase):
         )
         try:
             data = b64decode(param).decode('ascii')
-        except (ValueError, UnicodeDecodeError, binascii.Error):
+        except ValueError, UnicodeDecodeError, binascii.Error:
             raise invalid_user_credentials_exc  # noqa: B904
         login, separator, password = data.partition(':')
         if not separator:
