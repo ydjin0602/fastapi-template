@@ -4,6 +4,7 @@ from typing import Any
 from dotenv import find_dotenv
 from dotenv import load_dotenv
 from pydantic import BaseModel
+from pydantic import RedisDsn
 from pydantic_settings import BaseSettings
 from pydantic_settings import SettingsConfigDict
 from sqlalchemy import URL
@@ -71,6 +72,42 @@ class PostgresSettings(BaseModel):
         )
 
 
+# FIXME: Если сервису не нужен Redis — удали эту секцию вместе с
+#  redis_pool_scope / redis_scope из app/api/di и зависимостью redis
+#  из pyproject.toml
+class RedisSettings(BaseModel):
+    host: str = 'localhost'
+    port: int = 6379
+    username: str | None = None
+    password: str | None = None
+    max_connections: int = 10  # Размер пула соединений
+
+    @property
+    def broker_url(self) -> str:
+        """Собираем Redis-URI."""
+        return str(
+            RedisDsn.build(
+                scheme='redis',
+                username=self.username,
+                password=self.password,
+                host=self.host,
+                port=self.port,
+            ),
+        )
+
+
+# FIXME: Если сервису не нужен Kafka — удали эту секцию вместе с
+#  kafka_broker_scope из app/api/di, блоком в app/main.py, примером
+#  консюмера в app/api/v1/faststream_consumers и зависимостями
+#  faststream / dishka-faststream из pyproject.toml
+class KafkaSettings(BaseModel):
+    enabled: bool = False  # Выключай, если сервис не слушает Kafka
+    bootstrap_servers: str = 'localhost:9092'
+    consumer_group: str = 'template_service'
+    # FIXME: Пропиши топики своего сервиса
+    # example_topic: str = 'example_topic'
+
+
 class Settings(BaseSettings):
     def __init__(self, **values: Any) -> None:
         load_dotenv(find_dotenv())
@@ -87,6 +124,8 @@ class Settings(BaseSettings):
     swagger: SwaggerSettings = SwaggerSettings()
     auth: AuthSettings = AuthSettings()
     postgres: PostgresSettings = PostgresSettings()
+    redis: RedisSettings = RedisSettings()
+    kafka: KafkaSettings = KafkaSettings()
 
 
 config = Settings()
