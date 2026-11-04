@@ -19,4 +19,4 @@ class TestHealthCheck:
         method = random.choice(['POST', 'PUT', 'DELETE'])
         response = await test_client.request(method=method, url='/health/')
         assert response.status_code == HTTP_405_METHOD_NOT_ALLOWED
-        assert response.json()['detail'] == 'Method Not Allowed'
+        assert response.json()['message'] == 'Method Not Allowed'
