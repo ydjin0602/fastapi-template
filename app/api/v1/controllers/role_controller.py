@@ -5,11 +5,13 @@ from collections.abc import Sequence
 from dishka import FromDishka as Depends
 from dishka.integrations.fastapi import DishkaRoute
 from fastapi import APIRouter
+from starlette.status import HTTP_400_BAD_REQUEST
 from starlette.status import HTTP_404_NOT_FOUND
 from starlette.status import HTTP_409_CONFLICT
 
 from app.api.utils.swagger.default_response import get_responses
 from app.api.v1.models import UserRoleModel
+from app.api.v1.schemas.base_schema import IdPath
 from app.api.v1.schemas.role_schema import CreateRoleSchema
 from app.api.v1.schemas.role_schema import GetRoleByIdSchema
 from app.api.v1.schemas.role_schema import RoleSchema
@@ -46,7 +48,7 @@ async def get_all_roles(
     ),
 )
 async def get_role_by_id(
-    role_id: int,
+    role_id: IdPath,
     usecase: Depends[GetRoleByIdUsecase],
 ) -> UserRoleModel | None:
     return await usecase(
@@ -63,7 +65,7 @@ async def get_role_by_id(
     description='Создать новую роль в системе. Необходимо указать уникальное название'
     ' роли. Роль используется для управления правами доступа пользователей',
     responses=get_responses(
-        include_statuses=[HTTP_409_CONFLICT],
+        include_statuses=[HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT],
     ),
 )
 async def create_role(

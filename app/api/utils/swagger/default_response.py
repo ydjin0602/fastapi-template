@@ -21,6 +21,12 @@ def get_responses(include_statuses: list[int] | None = None) -> dict:
 
     for status_code in include_statuses:
         match status_code:
+            case status.HTTP_400_BAD_REQUEST:
+                responses[status_code] = {
+                    'description': 'Невалидное тело запроса '
+                    '(не-JSON или не-UTF8 данные)',
+                    'model': ErrorSchema,
+                }
             case status.HTTP_401_UNAUTHORIZED:
                 responses[status_code] = {
                     'description': 'Ошибка авторизации',
