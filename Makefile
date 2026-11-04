@@ -1,28 +1,31 @@
 PORT:=8000
 
+deps-up:
+	docker compose --profile db up -d postgresql redis
+
 run:
-	uvicorn app.main:app --host 127.0.0.1 --port "$(PORT)"
+	uv run uvicorn app.main:app --host 127.0.0.1 --port "$(PORT)"
 
 migrations_init:
-	alembic revision --autogenerate -m "init"
+	uv run alembic revision --autogenerate -m "init"
 
 makemigrations:
-	alembic revision --autogenerate -m "$(MSG)"
+	uv run alembic revision --autogenerate -m "$(MSG)"
 
 migrate:
-	alembic upgrade head
+	uv run alembic upgrade head
 
 migrate_with_data:
-	alembic -x data=true upgrade head
+	uv run alembic -x data=true upgrade head
 
 downgrade:
-	alembic downgrade -1
+	uv run alembic downgrade -1
 
-test_long:
-	pytest --maxfail=1 --cov=app -vv --cov-config .coveragerc
+test_slow:
+	uv run pytest --maxfail=1 --cov=app -vv --cov-config .coveragerc -m slow
 
 test:
-	pytest --maxfail=1 --cov=app -vv --cov-config .coveragerc -m "not long"
+	uv run pytest --maxfail=1 --cov=app -vv --cov-config .coveragerc -m "not slow"
 
 lint:
-	pre-commit run --all-files
+	uv run pre-commit run --all-files
